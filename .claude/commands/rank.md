@@ -50,6 +50,8 @@ Then read the scoring framework and profile **once**:
 
 State how many jobs will be ranked and how many are deferred before proceeding.
 
+**Exclude list.** `tools/rank_state.py candidates` already drops jobs matching `.claude/skills/job-scraper/exclude.md` and jobs whose `/scrape` quick fit was `low` unless a rank scored them 70+, and reports both counts. The list may have grown since the job was scraped.
+
 ---
 
 ## Step 2: Batch-Fetch and Score
@@ -150,6 +152,8 @@ Do not modify `job_search_tracker.csv` - that file records applications, and `/r
 ---
 
 ## Step 5: Present the Shortlist
+
+After writing state, run `python3 tools/apply_list.py` to refresh `upload/apply_list.html` (ranked jobs move to the top) and mention it.
 
 ```
 ## Job Ranking - YYYY-MM-DD

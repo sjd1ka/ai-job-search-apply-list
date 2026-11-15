@@ -121,3 +121,11 @@ company_research/*.json
 
 # Brainstorm mockups (superpowers visual companion) - never ship
 .superpowers/
+
+# Personal preferences written by /setup (template: job_search_config.example.json)
+job_search_config.json
+# Apply list page, staged uploads and LinkedIn posting cache
+upload/
+**/job_scraper/details_cache.json
+**/job_scraper/target_coverage.json
+**/job_scraper/scheduled_run.log

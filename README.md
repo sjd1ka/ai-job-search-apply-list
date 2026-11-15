@@ -37,6 +37,21 @@
 >
 > This project has **no affiliated cryptocurrency, token, or paid sponsorship program**. Anything claiming otherwise is unauthorized and should be treated as a scam. The only ways to support the project are the Ko-fi link below and contributing on GitHub.
 
+## What this fork adds
+
+This is a fork of [ai-job-search](https://github.com/ai-job-search-dev/ai-job-search) built for applying broadly by hand. All of it comes from your answers to `/setup` (Step 2.9: roles, locations, extra target companies, exclusions, referral searches, daily-run time), saved in a gitignored `job_search_config.json`.
+
+| Feature | What it does |
+|---|---|
+| **Apply list page** (`tools/apply_list.py`) | After every `/scrape` and `/rank`, writes `upload/apply_list.html`: every job worth applying to, newest and best first, with the posting link, the posting's stated years of experience (postings needing citizenship or a clearance drop to a hidden section with the quote), and LinkedIn searches for the company's recruiters, your school's alumni and people in the same role. Tick **Applied** or **Not applying**; ticks stay in your browser. No agent tokens. |
+| **LinkedIn sweep** (`tools/linkedin_sweep.py`) | Pages through up to 100 LinkedIn results per role and location, drops stale, irrelevant, excluded and already-seen jobs before Claude reads them. |
+| **Exclude list** (`.claude/skills/job-scraper/exclude.md`) | Companies, title words (Senior, Lead...) and locations that are always skipped, everywhere. |
+| **`/tailor`** (`tools/tailor_resume.py`) | One-page tailored resume per high-fit job, written only from your confirmed fact bank `cv/facts.md`, with lint rules (no weak openers, no filler) and a review pass. |
+| **`/fill`** | Fills an application form in your own Chrome (Claude in Chrome) from `10-answer-bank.md`. Never submits, never passes CAPTCHAs, never types passwords or ticks legal attestations. |
+| **Daily run** (`tools/schedule_daily.py`) | Runs `/scrape` at your chosen time: a Task Scheduler task on Windows, a cron line on macOS/Linux. |
+
+Quick start for this fork: clone it, install the prerequisites from [SETUP.md](SETUP.md), start `claude --chrome` in the folder and run `/setup`. **Keep your copy private:** setup writes your personal details into tracked files (SETUP.md section 8).
+
 ## Does it actually work?
 
 I'm a geophysicist by training. When my position was cut in late 2025, I built this framework to run my own job search - the same `/scrape`, `/apply`, and `/interview` workflow in this repo, used weekly, on my own career. I was upfront about it with every employer I spoke to, and instead of counting against me, it usually sparked a genuine technical conversation.

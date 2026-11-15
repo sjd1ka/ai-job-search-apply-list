@@ -103,6 +103,17 @@ ALLOWED_PERMISSIONS = {
     # Reads a file or stdin, writes only to an explicit --out, never fetches.
     "Bash(python tools/posting_guard.py:*)",
     "Bash(python3 tools/posting_guard.py:*)",
+    # Fork additions: local, read-mostly helpers (no network beyond linkedin-search's own CLI)
+    "Bash(python tools/linkedin_sweep.py:*)",
+    "Bash(python3 tools/linkedin_sweep.py:*)",
+    "Bash(python tools/apply_list.py:*)",
+    "Bash(python3 tools/apply_list.py:*)",
+    "Bash(python tools/stage_upload.py:*)",
+    "Bash(python3 tools/stage_upload.py:*)",
+    "Bash(python tools/tailor_resume.py:*)",
+    "Bash(python3 tools/tailor_resume.py:*)",
+    "Bash(python tools/user_config.py:*)",
+    "Bash(python3 tools/user_config.py:*)",
 }
 
 # Rules that must stay in .claude/settings.json permissions.ask. An ask rule

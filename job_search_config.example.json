@@ -1,0 +1,39 @@
+{
+  "_about": "Template. /setup copies this to job_search_config.json (gitignored) and fills it in with your answers. Edit that copy any time.",
+  "candidate": {
+    "name": "Your Name",
+    "contact_line": "(555) 555-0100 | you@example.com | Your City, Region",
+    "file_prefix": "Your.Name",
+    "school": "Your University"
+  },
+  "search": {
+    "roles": ["Business Analyst", "Data Analyst"],
+    "locations": ["Toronto, Ontario, Canada"],
+    "title_keywords": ["analyst", "analysis", "business", "data", "reporting", "insight", "intelligence", "systems", "consultant", "product"],
+    "days_window": 2,
+    "monday_days_window": 3,
+    "exclude_french_titles": false
+  },
+  "target_companies": [
+    {"name": "Example Corp", "careers_url": "https://example.com/careers"}
+  ],
+  "referral_search": {
+    "talent_acquisition_places": ["Toronto", "Ontario"]
+  },
+  "schedule": {
+    "enabled": false,
+    "time": "12:20",
+    "days": ["MON", "TUE", "WED", "THU", "FRI"]
+  },
+  "resume": {
+    "education": [
+      {"school": "Your University", "location": "Your City, Region", "degree": "Bachelor of Science, Your Major", "dates": "Sep 2019 - Jun 2023", "note": "Honours: Dean's List"}
+    ],
+    "jobs": [
+      {"key": "job1", "org": "Most Recent Employer", "location": "Your City, Region", "title": "Your Title", "dates": "Jan 2025 - Present"},
+      {"key": "job2", "org": "Previous Employer", "location": "Your City, Region", "title": "Your Title", "dates": "Jun 2023 - Dec 2024"}
+    ],
+    "font": "Times New Roman",
+    "banned_phrases": []
+  }
+}

@@ -68,8 +68,8 @@ For each **enabled** portal skill:
 
 1. Read its `SKILL.md` to find the correct `bun run …` invocation and supported flags.
 2. Take the plain terms from `search-queries.md`'s **Plain terms** blocks and translate each into that portal's flag format (e.g. `--key`, `--search-string`, `--query`, filter codes — whatever the portal's SKILL.md specifies). When a priority has no Plain terms block, or its terms still carry a `[YOUR_...]` placeholder, take the terms from that priority's `site:` lines instead (drop `site:`, `OR` and the location words; each quoted phrase is one term). **One plain term per CLI call — never `OR`, never a combined string.** Portal search boxes do not share Google's syntax, so a combined query returns a different result set than its terms would (on some portals it is silently reduced to one of them). Quoting follows the portal's own SKILL.md `Query syntax:` line: quote a multi-word term when that line says quotes narrow the match (as a phrase or as a requirement that every word appear), otherwise pass the words bare. The quote characters go inside the argument the CLI receives (`--query '"product owner"'`); shell quotes alone are stripped before the CLI sees them. The `site:` blocks in `search-queries.md` are WebSearch-only and are never passed to a CLI.
-3. Scope to the last 14 days using the portal's supported recency **filter** flag (`--jobage`, `--since <YYYY-MM-DD>`, etc. — as documented per portal). A portal with **no recency flag** (jobdanmark offers none) still gets scoped: every portal's search output carries a `date` field, so filter client-side — drop results whose `date` is older than 14 days after the call returns, and never invent a flag the portal's SKILL.md does not document (the CLIs reject unknown flags). `--order PublicationDate` is a sort, and a sort is not a filter — pairing it with a `--limit` is a defensible approximation on a portal that offers nothing better (jobnet), but apply the client-side date filter on top all the same.
-4. Cap results to ~20 per call using the portal's limit flag.
+3. **Date window N** comes from `job_search_config.json`: `search.monday_days_window` on Mondays (covers the weekend), `search.days_window` on other days. If that file is missing, use 14. After every call, also drop client-side any result whose `date` is more than N days before today, even when a recency flag was passed (aggregators re-surface old or reposted jobs). A result with no determinable date is dropped from the presented list, not guessed. Scope to the last N days using the portal's supported recency **filter** flag (`--jobage`, `--since <YYYY-MM-DD>`, etc. — as documented per portal). A portal with **no recency flag** (jobdanmark offers none) still gets scoped: every portal's search output carries a `date` field, so filter client-side — drop results whose `date` is older than N days after the call returns, and never invent a flag the portal's SKILL.md does not document (the CLIs reject unknown flags). `--order PublicationDate` is a sort, and a sort is not a filter — pairing it with a `--limit` is a defensible approximation on a portal that offers nothing better (jobnet), but apply the client-side date filter on top all the same.
+4. **LinkedIn: use `python3 tools/linkedin_sweep.py -q "<title>" -l "<location>"`** once per role and location in `job_search_config.json` (`search.roles` x `search.locations`) instead of calling the CLI page by page. It pages through up to 10 pages per query, stops early when results run out or turn irrelevant, applies the date window and the exclude list, and prints only fresh, relevant jobs not already in `job_scraper/seen_jobs.json`, so you read survivors, not raw pages. Deduplicate across queries yourself. Other portals: cap results to ~20 per call using the portal's limit flag.
 5. Use `--format json` for machine-readable output.
 
 Run all portal CLI calls in parallel where possible using the Agent tool. Collect all `results` arrays — across terms as well as portals — into a single pool for Step 2, keeping each result tagged with its source portal skill (for Step 2 `detail` lookups). A posting that several terms return appears once per term, and Step 2 only skips URLs already in `job_scraper/seen_jobs.json`, so deduplicate the pool by URL before Step 2.
@@ -80,6 +80,7 @@ If a CLI tool exits with a non-zero code, log the error message and continue —
 
 Use `WebSearch` for:
 - Portals listed in `search-queries.md` that do **not** have a corresponding directory under `.agents/skills/`
+- **Target companies** in `job_search_config.json` (`target_companies`), on every run: `python3 tools/linkedin_sweep.py -q "<first role>" --companies "<comma-separated names>"` for their LinkedIn postings, plus each company's `careers_url` (open it with WebFetch or, when the site needs a browser, Claude in Chrome). Record per company: searched or not, jobs kept, in `job_scraper/target_coverage.json`.
 - Any portal whose CLI fails at runtime
 - When bun is unavailable (Step 1a failed)
 
@@ -141,11 +142,15 @@ If two or more results in this run's pool (from the same company, or sharing the
 
 ### Step 3: Quick Fit Assessment
 
+**Exclude list first.** Drop every result whose company, location or title words match `exclude.md` (this directory) before any other check: store it in `job_scraper/seen_jobs.json` with status `skipped` and reason `excluded`, and never present it. `tools/linkedin_sweep.py` already drops these for LinkedIn; apply the list yourself to other sources.
+
 For each new job, do a rapid fit check (NOT the full evaluation from `04-job-evaluation.md` - just a quick signal):
 
 - **High match**: Role directly involves your core skills
 - **Medium match**: Role is adjacent to your experience
 - **Low match**: Role requires significant skills you lack
+
+**Never Low from the title alone when the title is on target** (contains one of `search.title_keywords` in `job_search_config.json`, the same test `tools/apply_list.py` uses). Read the posting first, and a Low must write its reason from the posting into `gaps` (e.g. "posting read: 5+ years required"). An on-target Low with empty `gaps` is not hidden: `tools/apply_list.py` puts it through its posting checks and shows it.
 
 **Employment type:** while reading the posting for this check, note how it says the engagement is structured and record it as `employment_type` in Step 4 - one of `full_time`, `part_time`, `contract`, `freelance`, or `null`. Take it only from what the posting itself states, in its text or in the portal's `detail` output from Step 2 ("permanent", "6-month contract", "freelance", "part-time"); a posting that says nothing, or says something ambiguous, is `null`. Never infer it from the title, the company or the portal.
 
@@ -225,7 +230,9 @@ https://www.linkedin.com/search/results/people/?keywords=<url-encoded "<Company 
 Use a short keyword drawn from the posting's title for `<role keyword>` - e.g. a posting
 titled "AI Program Manager" becomes `"<Company Name> AI Program Manager"`.
 
-Both links are for the user to open and browse themselves - never fetch or scrape the
+The apply list (Step 5) also adds an alumni search (`candidate.school`) and talent-acquisition searches per place in `referral_search.talent_acquisition_places`.
+
+These links are for the user to open and browse themselves - never fetch or scrape the
 LinkedIn people-search result pages programmatically. Never fabricate contacts or claim a
 specific person was found; these are search links, not results.
 
@@ -245,6 +252,14 @@ Scraper-based portal CLIs rot silently: when a portal changes its markup, the pa
 **Probe-only mode (`/scrape health`).** Skip Steps 1-4 and this step's free pass (there is no fresh run to scan); instead probe every installed portal directly - enabled ones by default, a disabled one only when named explicitly (e.g. `/scrape health jobnet`). Each portal gets the sentinel probe above, the degraded criteria applied to whatever it returns, and - since the user explicitly asked for diagnosis - one `detail` fetch on the first result of each healthy portal (description must be readable decoded text; a failure downgrades to degraded). Report all statuses in this mode, including healthy. Volume stays bounded: one search, at most one retry, at most one detail per portal.
 
 ### Step 5: Present Results
+
+**Never ask how to present (fixed format).** A scheduled run has nobody to answer, so a question mid-run stalls it. The format is fixed, however many jobs there are: run checklist, a full table for high and medium rows with High-Match Highlights, and low rows listed by title only (the apply list page has every row). Finish every step, tailoring included, before any question.
+
+**Run checklist first.** Open the summary with one table, one row per source actually configured (each LinkedIn location, each other enabled portal, target companies: LinkedIn and careers sites with n of N searched, date window with the number dropped as older than N days), every row filled with done / not done, queries, jobs kept and a note. A run is complete only when every row says done; if one could not be done (usage limit, human-verification check, site down), say so in that row and offer to finish just that row.
+
+**Apply list (always).** Run `python3 tools/apply_list.py`. It rewrites `upload/apply_list.html` from `job_scraper/seen_jobs.json` without agent tokens: every job worth applying to, with its posting link, experience check and referral searches. The candidate applies by hand from that page and ticks Applied / Not applying there; end the run by telling them its path and how many jobs it lists.
+
+**Tailored resumes (after the apply list, never ask first),** only when `cv/facts.md` has been filled in (not the template): follow `.claude/commands/tailor.md` for every row whose fit is `high`, including its Review pass, then run `python3 tools/apply_list.py` again so each row links its resume. Name the jobs built and any high row skipped, with the reason.
 
 Present new jobs in a table sorted by fit (high first). When Step 1b skipped
 portals (`enabled: false`), report them with the `skipped (disabled):` line below

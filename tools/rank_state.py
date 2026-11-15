@@ -186,7 +186,11 @@ def cmd_candidates(args) -> int:
     _, seen = load_state(args.state)
     excluded = tracker_pairs(args.tracker)
 
-    selected, skipped_tracker = [], 0
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import linkedin_sweep  # same folder; shares the exclude-list parser
+
+    ex = linkedin_sweep.excludes()
+    selected, skipped_tracker, skipped_excluded, skipped_low = [], 0, 0, 0
     for key, entry in seen.items():
         status = entry.get("status")
         if args.all:
@@ -196,6 +200,13 @@ def cmd_candidates(args) -> int:
             continue
         if (norm(entry.get("company")), norm(entry.get("title"))) in excluded:
             skipped_tracker += 1
+            continue
+        if linkedin_sweep.excluded(entry, *ex):
+            skipped_excluded += 1
+            continue
+        # Low quick-fit jobs are shown once on the apply list and then dropped, unless a rank scored them high.
+        if entry.get("fit") == "low" and (entry.get("rank_score") or 0) < 70:
+            skipped_low += 1
             continue
         if args.focus:
             haystack = " ".join(
@@ -227,6 +238,8 @@ def cmd_candidates(args) -> int:
                 "selected": selected,
                 "deferred": max(0, eligible - len(selected)),
                 "excluded_by_tracker": skipped_tracker,
+                "excluded_by_exclude_list": skipped_excluded,
+                "excluded_low_fit": skipped_low,
                 "total_entries": len(seen),
             },
             indent=2,

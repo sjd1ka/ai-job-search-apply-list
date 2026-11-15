@@ -8,7 +8,7 @@ There are three paths into setup. Step 0 picks the right one; all three converge
 
 ## Step 0: Welcome & Choose Path
 
-If `$ARGUMENTS` contains `--section <name>`, skip directly to that section in Path C for an update-only flow. Do not run the path-selection prompt below.
+If `$ARGUMENTS` contains `--section <name>`, skip directly to that section in Path C for an update-only flow. `--section prefs` runs Step 2.9 and then only Step 3 items 10-11. Do not run the path-selection prompt below.
 
 Otherwise, first check where this working copy would publish to — **before anything is
 written, not after** (the Step 4 privacy note fires only once every file is already on
@@ -353,6 +353,22 @@ This proactive suggestion step helps users discover career paths they might not 
 
 ---
 
+## Step 2.9: Daily-Run Preferences (all paths)
+
+Every path asks these before Step 3, because they drive the daily `/scrape`, the apply list page, `/tailor` and `/fill`. Ask them as one short conversation, in this order, reusing anything the user already answered in Section 9 (do not ask twice). Offer the default in brackets; an empty answer takes it. `/setup --section prefs` runs only this step.
+
+1. **Roles:** "Which job titles should the daily search look for?" 3-8 titles (from Section 9 if asked there). Then derive `title_keywords`: the distinctive lower-case words in those titles plus close synonyms (for "Business Analyst" and "Data Analyst": analyst, analysis, business, data, reporting, insight, intelligence, systems). Show the list and let the user add or remove words: a posting title with none of them is dropped before anyone reads it.
+2. **Locations:** "Which cities or regions? Write them the way LinkedIn does, e.g. `Toronto, Ontario, Canada`." One or more; "Remote" is allowed.
+3. **Target companies beyond LinkedIn and Indeed:** "Any companies whose own careers site you want checked every run? Give the name and, if you know it, the careers page URL." Zero is fine. Mention that each one adds time to every run, so 5-20 is a sensible range.
+4. **Exclusions:** "Any companies, title words (e.g. Senior, Lead, Manager) or locations to always skip?" Nothing is pre-filled: suggest seniority words only if the user asks what others use. Then: "Skip French-language titles? [no]" (yes for someone who does not work in French in a bilingual market).
+5. **Referral searches:** "Which school should the apply list search alumni from?" (default: their most recent school from the profile) and "Which places should the talent-acquisition searches use?" (default: the first location's city and region).
+6. **Daily run:** "Run `/scrape` automatically on a schedule? If yes, what time and which days? [no; 12:00 Mon-Fri if yes]" Say plainly: on Windows it opens a PowerShell window at that time and runs only while they are logged in; on macOS/Linux it is a cron line running headless.
+7. **Date window:** "Look back how many days each run? [2, and 3 on Mondays to cover the weekend]" If they run less often than daily, the window should cover the gap between runs (e.g. 7 for weekly).
+
+Then write, in Step 3 item 10, and show a short summary of the answers before writing.
+
+---
+
 ## Step 3: Generate Profile Files
 
 Once data collection is complete, generate or finish populating the following files. **For Path A**, the seven skill files are already populated by Step A7; check each before writing and skip if its content is no longer placeholder text.
@@ -398,6 +414,17 @@ Replace all placeholder tokens in the search queries file with the user's actual
   - Priority 3: Adjacent roles they could pivot into
   - Priority 4: Broader roles (wider net)
 
+### 10. Write the daily-run files *(all paths, from Step 2.9)*
+
+- **`job_search_config.json`:** copy `job_search_config.example.json` and fill every field: `candidate` (name, contact line as it should appear under the name on the resume, `file_prefix` such as `First.Last` used for upload file names, school), `search` (roles, locations, title_keywords, days_window, monday_days_window, exclude_french_titles), `target_companies` (name + careers_url; leave the URL empty when unknown), `referral_search.talent_acquisition_places`, `schedule` (enabled, time as HH:MM 24-hour, days as MON..SUN), and `resume` (education and jobs from the profile, newest first, each job with a short lower-case `key` such as the employer's first word; keep `font` unless the user's computer lacks Times New Roman). The file is gitignored; never commit it.
+- **`.claude/skills/job-scraper/exclude.md`:** the companies, title words and locations from question 4, one per line under the matching heading.
+- **`10-answer-bank.md`:** fill identity and contact from the profile. Work authorization, salary, availability and self-identification are personal: ask once, in one message, whether the user wants to answer them now; anything not answered stays `PENDING` (never guess, never infer a self-identification answer from a name or profile).
+- **`cv/facts.md`:** draft one section per job and project from the profile, one fact per line, only what the documents or the user stated. Tell the user to read and confirm every line before the first `/tailor`, because `/tailor` treats this file as the only truth.
+- Run `python3 tools/user_config.py` and `python3 tools/linkedin_sweep.py --selftest` to check the config loads.
+
+### 11. Register the daily run *(only if the user said yes in Step 2.9)*
+Run `python3 tools/schedule_daily.py --dry-run`, show the command, and ask before registering it: it creates a Windows Task Scheduler task (or prints a cron line on macOS/Linux), which changes the user's system. On a yes, run `python3 tools/schedule_daily.py`. Tell them it can be removed with `python3 tools/schedule_daily.py --remove`, and re-run after changing `schedule` in the config.
+
 ---
 
 ## Step 4: Confirm & Next Steps
@@ -415,6 +442,10 @@ Present a summary:
 > - `.claude/skills/job-application-assistant/07-interview-prep.md` - STAR examples from your experience
 > - `cv/main_example.tex` - Your LaTeX CV template
 > - `.claude/skills/job-scraper/search-queries.md` - Job search queries for `/scrape`
+> - `job_search_config.json` - Your roles, locations, target companies, referral searches and daily-run time (gitignored)
+> - `.claude/skills/job-scraper/exclude.md` - Companies, title words and locations always skipped
+> - `.claude/skills/job-application-assistant/10-answer-bank.md` - Form answers for `/fill` (`PENDING` items are asked before use)
+> - `cv/facts.md` - Fact bank for `/tailor`: **read and confirm every line before your first tailored resume**
 >
 > **Privacy note:** the files above now contain your personal data and are *tracked by git*.
 > A GitHub fork of the template is always public (forks of public repos cannot be made
@@ -422,7 +453,8 @@ Present a summary:
 > repository instead - see SETUP.md section 8 for the private-remote setup.
 >
 > **Try it out:**
-> - Run `/scrape` to search for matching jobs right now
+> - Run `/scrape` to search for matching jobs right now, then open `upload/apply_list.html` in your browser: apply from it and tick Applied / Not applying
+> - Run `/tailor <company>` for a one-page resume tailored to one posting, and `/fill <company>` to have Claude fill an application form in your Chrome (it never submits)
 > - Run `/apply` with a job posting URL to see the full application workflow
 > - Run `/setup --section search` later to update your search queries as your priorities evolve
 
