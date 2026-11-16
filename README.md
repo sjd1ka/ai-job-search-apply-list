@@ -16,7 +16,7 @@
 
 <p align="center">
   An AI-powered job application framework built on <a href="https://claude.com/claude-code">Claude Code</a>.<br>
-  Fork it, fill in your profile, and let Claude evaluate job postings, tailor your CV,<br>
+  Clone it, fill in your profile, and let Claude evaluate job postings, tailor your CV,<br>
   write cover letters, and prepare you for interviews.
 </p>
 
@@ -50,7 +50,19 @@ This is a fork of [ai-job-search](https://github.com/ai-job-search-dev/ai-job-se
 | **`/fill`** | Fills an application form in your own Chrome (Claude in Chrome) from `10-answer-bank.md`. Never submits, never passes CAPTCHAs, never types passwords or ticks legal attestations. |
 | **Daily run** (`tools/schedule_daily.py`) | Runs `/scrape` at your chosen time: a Task Scheduler task on Windows, a cron line on macOS/Linux. |
 
-Quick start for this fork: clone it, install the prerequisites from [SETUP.md](SETUP.md), start `claude --chrome` in the folder and run `/setup`. **Keep your copy private:** setup writes your personal details into tracked files (SETUP.md section 8).
+### Quick start for this fork
+
+> [!IMPORTANT]
+> **Clone it to your computer; do not fork it.** `/setup` writes your name, contact details, salary and work-authorization answers into files tracked by git, and a GitHub fork of a public repository is always public. Keep your copy local, or push it only to a **private** repository you create (SETUP.md section 8). `/setup` checks this before it writes anything.
+
+```bash
+git clone https://github.com/sjd1ka/ai-job-search-apply-list.git
+cd ai-job-search-apply-list
+python3 tools/install_portal_clis.py
+claude --chrome
+```
+
+Install the prerequisites from [SETUP.md](SETUP.md) first (Claude Code, bun, Python; LaTeX for resumes). Then type `/setup` and pick **Path B**: drop in your resume and it asks only what the resume doesn't cover. Afterwards run `/scrape` and open `upload/apply_list.html` in your browser.
 
 ## Does it actually work?
 

@@ -15,8 +15,24 @@ written, not after** (the Step 4 privacy note fires only once every file is alre
 disk, which is too late to inform the decision). Run `git remote get-url origin`; if the
 command fails (no remote, or not a git checkout), skip this check silently. If there is
 a GitHub `origin`, check it with `gh repo view <owner/repo> --json visibility,isFork`
-when `gh` is available. If the origin is a **public fork** of the template — or its
-visibility cannot be determined — warn now and wait:
+when `gh` is available; without `gh`, run `curl -s https://api.github.com/repos/<owner/repo>`
+(a read-only GET): a JSON body with `"private": false` means public, a 404 means private
+or not visible to an anonymous reader (treat that as private only if the user confirms it).
+
+**Cloned straight from the template?** If `origin` is the template itself
+(`sjd1ka/ai-job-search-apply-list` or `ai-job-search-dev/ai-job-search`), the user cannot
+push there anyway, but say so plainly and offer, before anything is written:
+
+> You cloned the template directly, which is the right way to use it. I suggest renaming
+> `origin` to `upstream` (`git remote rename origin upstream`) so you can still pull
+> updates but nothing can ever be pushed to a public repository by accident. If you want a
+> backup, create a **private** repository on GitHub and add it as `origin`
+> (SETUP.md section 8). Never fork this repository for your own job search: a GitHub fork
+> of a public repository is always public. Rename `origin` now?
+
+Run the rename only on a yes, then continue. If the origin is a **public fork** of the
+template, any other public repository, or its visibility cannot be determined, warn now
+and wait:
 
 > **Heads-up before we start:** your `origin` points at `<owner/repo>`, which is a
 > public GitHub fork. This setup writes your personal data (name, contact details,
@@ -43,9 +59,9 @@ Then welcome the user with a single message that lists three paths. The wording 
 >
 > **Path A: Read my documents folder** (recommended for what you have) - I'll read everything in `documents/`, cross-reference for consistency, and build your profile from real source materials. Idempotent and safe to re-run as you add more documents.
 >
-> **Path B: Single CV import** - Paste or @-mention a single CV/resume here. I'll extract it and ask follow-up questions for what's missing.
+> **Path B: Upload your resume** (quickest) - Drag your resume (PDF or Word) into this chat, @-mention its file, or paste the text. I'll read your details from it and only ask about what a resume doesn't cover, such as job preferences, salary and deal-breakers.
 >
-> **Path C: Interview mode** - I'll walk you through structured questions section by section.
+> **Path C: Interview mode** - I'll ask every section one by one (contact, education, each job, skills, goals...). It takes the longest; pick it only if you have no resume at hand.
 >
 > Which would you like?
 
@@ -59,9 +75,9 @@ Then welcome the user with a single message that lists three paths. The wording 
 >
 > **Path A: Documents folder** (best signal if you have several materials) - Drop your CV / LinkedIn export / diplomas / reference letters / project summaries in the `documents/` folder, then say "go". I'll read everything and build your profile from it. See `documents/README.md` for the folder layout.
 >
-> **Path B: Single CV import** - Paste or @-mention a single CV/resume here. I'll extract it and ask follow-up questions for what's missing.
+> **Path B: Upload your resume** (quickest) - Drag your resume (PDF or Word) into this chat, @-mention its file, or paste the text. I'll read your details from it and only ask about what a resume doesn't cover, such as job preferences, salary and deal-breakers.
 >
-> **Path C: Interview mode** - I'll walk you through structured questions section by section. Good if you're starting from scratch.
+> **Path C: Interview mode** - I'll ask every section one by one (contact, education, each job, skills, goals...). It takes the longest; pick it only if you have no resume at hand.
 >
 > Which would you like?
 
@@ -261,7 +277,7 @@ If the user provides a single CV/resume:
 1. Read the document thoroughly.
 2. Extract all structured information: name, contact, education, experience, skills, languages, publications, awards.
 3. Present a summary of what was extracted.
-4. Ask follow-up questions for gaps (behavioral profile, career goals, deal-breakers, languages and proficiency levels if not already extracted, salary expectations, references).
+4. Ask follow-up questions only for gaps the CV did not answer (behavioral profile, career goals, deal-breakers, languages and proficiency levels if not already extracted, salary expectations, references), grouped into as few messages as possible. Never re-ask something the CV states; confirm it in the step 3 summary instead.
 5. Proceed to Step 3 (file generation).
 
 ---
